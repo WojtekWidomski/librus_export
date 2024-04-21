@@ -5,6 +5,7 @@ const AUTH_URL1: &str =
     "https://api.librus.pl/OAuth/Authorization?client_id=46&response_type=code&scope=mydata";
 const AUTH_URL2: &str = "https://api.librus.pl/OAuth/Authorization?client_id=46";
 const GRANT_URL: &str = "https://api.librus.pl/OAuth/Authorization/Grant?client_id=46";
+const MSG_URL: &str = "https://synergia.librus.pl/wiadomosci3";
 
 #[derive(Serialize)]
 struct LoginData {
@@ -42,10 +43,13 @@ impl SynergiaClient {
 
         let grant_res = client.get(GRANT_URL).send()?;
         let grant_res_text = grant_res.text()?;
-        
+
         if grant_res_text.contains("error") {
             return Err(anyhow!("Error when authenticating: {}", grant_res_text));
         }
+
+        // Authenticate Librus Synergia messages
+        client.get(MSG_URL).send()?;
 
         Ok(SynergiaClient { client })
     }
