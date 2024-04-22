@@ -16,6 +16,8 @@ struct LoginData {
     pass: String,
 }
 
+/// Authenticate `client` using `username` and `password`
+/// `client` must have enabled cookies
 pub fn authenticate(client: &Client, username: &str, password: &str) -> Result<()> {
     client
         .get(AUTH_URL1)
