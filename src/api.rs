@@ -1,6 +1,7 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Context, Ok, Result};
 use serde::Serialize;
 use serde_json::Value;
+use base64::prelude::*;
 
 const AUTH_URL1: &str =
     "https://api.librus.pl/OAuth/Authorization?client_id=46&response_type=code&scope=mydata";
@@ -22,8 +23,16 @@ struct User {
     last_name: String,
 }
 
+// There are 3 message types in Librus and they use different API.
 #[derive(Debug)]
-pub struct Message {
+enum MessageType {
+    Inbox,
+    Sent,
+    Trash
+}
+
+#[derive(Debug)]
+pub struct Message<'a> {
     id: i64,
     sender_first_name: String,
     sender_last_name: String,
@@ -31,18 +40,46 @@ pub struct Message {
     content: Option<String>,
     send_date: String,
     receivers: Option<Vec<User>>,
+    client: &'a reqwest::blocking::Client,
+    message_type: MessageType
 }
 
-// impl Message {
-//     fn get_content(&self) -> String {
-//         if let Some(saved_content) = self.content {
-//             saved_content
-//         }
+impl<'a> Message<'a> {
+    pub fn get_content(&mut self) -> Result<String> {
+        if let Some(saved_content) = &self.content {
+            return Ok(saved_content.to_string());
+        }
 
-        
+        let msg = self
+            .client
+            .get(format!(
+                "https://wiadomosci.librus.pl/api/outbox/messages/{}",
+                self.id
+            ))
+            .send()?
+            .text()?;
 
-//     }
-// }
+        let msg_deserialized: Value = serde_json::from_str(&msg)?;
+
+        let content_field = match self.message_type {
+            MessageType::Inbox => "Message",
+            MessageType::Sent => "Message",
+            MessageType::Trash => "content",
+        };
+
+
+        let content = msg_deserialized["data"][content_field]
+            .as_str()
+            .context("Failed to derserialize message")?.to_string();
+
+        let content = String::from_utf8(BASE64_STANDARD.decode(content)?)?;
+
+        self.content = Some(content.clone());
+
+        Ok(content)
+
+    }
+}
 
 pub struct SynergiaClient {
     client: reqwest::blocking::Client,
@@ -154,6 +191,8 @@ impl SynergiaClient {
                 content: None,
                 send_date: msg["sendDate"].as_str().unwrap().to_string(),
                 receivers: None,
+                client: &self.client,
+                message_type: MessageType::Sent
             })
             .collect();
 
