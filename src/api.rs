@@ -15,21 +15,34 @@ struct LoginData {
     pass: String,
 }
 
-struct User<'a> {
+#[derive(Debug)]
+struct User {
     id: i32,
-    first_name: &'a str,
-    last_name: &'a str,
+    first_name: String,
+    last_name: String,
 }
 
-struct Message<'a> {
-    id: i32,
-    sender_first_name: &'a str,
-    sender_last_name: &'a str,
-    topic: &'a str,
-    content: Option<&'a str>,
-    send_date: &'a str,
-    receivers: Option<Vec<User<'a>>>,
+#[derive(Debug)]
+pub struct Message {
+    id: i64,
+    sender_first_name: String,
+    sender_last_name: String,
+    topic: String,
+    content: Option<String>,
+    send_date: String,
+    receivers: Option<Vec<User>>,
 }
+
+// impl Message {
+//     fn get_content(&self) -> String {
+//         if let Some(saved_content) = self.content {
+//             saved_content
+//         }
+
+        
+
+//     }
+// }
 
 pub struct SynergiaClient {
     client: reqwest::blocking::Client,
@@ -122,16 +135,29 @@ impl SynergiaClient {
         Ok(())
     }
 
-    pub fn get_messages_sent(&self, archive: bool) -> Result<()> {
+    pub fn get_messages_sent(&self, archive: bool) -> Result<Vec<Message>> {
         let folder_path = match archive {
             true => "archive/outbox",
             false => "outbox",
         };
         let msg_vec = self.get_messages(folder_path)?;
 
-        dbg!(msg_vec);
+        // dbg!(&msg_vec);
 
-        Ok(())
+        let converted_messages: Vec<Message> = msg_vec
+            .iter()
+            .map(|msg| Message {
+                id: msg["messageId"].as_str().unwrap().parse().unwrap(),
+                sender_first_name: String::from("user"),
+                sender_last_name: String::from("user"),
+                topic: msg["topic"].as_str().unwrap().to_string(),
+                content: None,
+                send_date: msg["sendDate"].as_str().unwrap().to_string(),
+                receivers: None,
+            })
+            .collect();
+
+        Ok(converted_messages)
     }
 
     pub fn get_messages_trash(&self, archive: bool) -> Result<()> {
