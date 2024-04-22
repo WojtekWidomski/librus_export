@@ -8,16 +8,6 @@ const AUTH_URL2: &str = "https://api.librus.pl/OAuth/Authorization?client_id=46"
 const GRANT_URL: &str = "https://api.librus.pl/OAuth/Authorization/Grant?client_id=46";
 const MSG_URL: &str = "https://synergia.librus.pl/wiadomosci3";
 
-// There are only few, predefined E-mail folder in Librus
-pub enum MessagesFolder {
-    Inbox,
-    Sent,
-    Trash,
-    ArchiveInbox,
-    ArchiveSent,
-    ArchiveTrash,
-}
-
 #[derive(Serialize)]
 struct LoginData {
     action: String,
@@ -81,16 +71,7 @@ impl SynergiaClient {
         Ok(SynergiaClient { client })
     }
 
-    pub fn get_messages(&self, folder: MessagesFolder) -> Result<()> {
-        let folder_path = match folder {
-            MessagesFolder::Inbox => "inbox",
-            MessagesFolder::Sent => "outbox",
-            MessagesFolder::Trash => "trash-bin",
-            MessagesFolder::ArchiveInbox => "archive/inbox",
-            MessagesFolder::ArchiveSent => "archive/outbox",
-            MessagesFolder::ArchiveTrash => "archive/trash-bin",
-        };
-
+    fn get_messages(&self, folder_path: &str) -> Result<Vec<Value>> {
         // Get only first message, because API will return all messages count at the same time
         let messages_res = self
             .client
@@ -121,13 +102,47 @@ impl SynergiaClient {
         let msg_list: Value = serde_json::from_str(messages_res.text()?.as_str())
             .context("Messages deserialization error")?;
 
-        let converted_list = msg_list["data"]
+        let msg_vec = msg_list["data"]
             .as_array()
-            .context("Message deserialization error")?
-            .iter()
-            .map(|msg| {
-                // TODO: Convert messages from api to structs.
-            });
+            .context("Message deserialization error")?;
+
+        Ok(msg_vec.to_vec())
+    }
+
+    pub fn get_messages_inbox(&self, archive: bool) -> Result<()> {
+        let folder_path = match archive {
+            true => "archive/inbox",
+            false => "inbox",
+        };
+
+        let msg_vec = self.get_messages(folder_path)?;
+
+        dbg!(msg_vec);
+
+        Ok(())
+    }
+
+    pub fn get_messages_sent(&self, archive: bool) -> Result<()> {
+        let folder_path = match archive {
+            true => "archive/outbox",
+            false => "outbox",
+        };
+        let msg_vec = self.get_messages(folder_path)?;
+
+        dbg!(msg_vec);
+
+        Ok(())
+    }
+
+    pub fn get_messages_trash(&self, archive: bool) -> Result<()> {
+        let folder_path = match archive {
+            true => "archive/trash-bin",
+            false => "trash-bin",
+        };
+
+        let msg_vec = self.get_messages(folder_path)?;
+
+        dbg!(&msg_vec);
 
         Ok(())
     }
