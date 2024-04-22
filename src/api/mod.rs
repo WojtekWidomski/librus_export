@@ -1,20 +1,11 @@
+mod authentication;
+
 use anyhow::{anyhow, Context, Ok, Result};
 use base64::prelude::*;
 use serde::Serialize;
 use serde_json::Value;
 
-const AUTH_URL1: &str =
-    "https://api.librus.pl/OAuth/Authorization?client_id=46&response_type=code&scope=mydata";
-const AUTH_URL2: &str = "https://api.librus.pl/OAuth/Authorization?client_id=46";
-const GRANT_URL: &str = "https://api.librus.pl/OAuth/Authorization/Grant?client_id=46";
-const MSG_URL: &str = "https://synergia.librus.pl/wiadomosci3";
-
-#[derive(Serialize)]
-struct LoginData {
-    action: String,
-    login: String,
-    pass: String,
-}
+use self::authentication::authenticate;
 
 #[derive(Debug)]
 struct User {
@@ -53,7 +44,7 @@ impl<'a> Message<'a> {
         let msg = self
             .client
             .get(format!(
-                "https://wiadomosci.librus.pl/api/outbox/messages/{}",
+                "https://wiadomosci.librus.pl/api/trash-bin/messages/{}",
                 self.id
             ))
             .send()?
@@ -90,33 +81,8 @@ impl SynergiaClient {
             .cookie_store(true)
             .build()?;
 
-        client
-            .get(AUTH_URL1)
-            .send()
-            .context("Failed to connect to Librus server.")?;
-
-        let login_data = LoginData {
-            action: String::from("login"),
-            login: String::from(username),
-            pass: String::from(password),
-        };
-
-        let auth_res = client.post(AUTH_URL2).form(&login_data).send()?;
-
-        if !auth_res.status().is_success() {
-            return Err(anyhow!("Error when trying to log in. Make sure your password is correct. If it is, then it is possible, that Librus changed API."));
-        }
-
-        let grant_res = client.get(GRANT_URL).send()?;
-        let grant_res_text = grant_res.text()?;
-
-        if grant_res_text.contains("error") {
-            return Err(anyhow!("Error when authenticating: {}", grant_res_text));
-        }
-
-        // Authenticate Librus Synergia messages
-        client.get(MSG_URL).send()?;
-
+        authenticate(&client, username, password)?;
+        
         Ok(SynergiaClient { client })
     }
 
@@ -178,8 +144,6 @@ impl SynergiaClient {
         };
         let msg_vec = self.get_messages(folder_path)?;
 
-        // dbg!(&msg_vec);
-
         let converted_messages: Vec<Message> = msg_vec
             .iter()
             .map(|msg| Message {
@@ -198,7 +162,7 @@ impl SynergiaClient {
         Ok(converted_messages)
     }
 
-    pub fn get_messages_trash(&self, archive: bool) -> Result<()> {
+    pub fn get_messages_trash(&self, archive: bool) -> Result<Vec<Message>> {
         let folder_path = match archive {
             true => "archive/trash-bin",
             false => "trash-bin",
@@ -206,8 +170,18 @@ impl SynergiaClient {
 
         let msg_vec = self.get_messages(folder_path)?;
 
-        dbg!(&msg_vec);
+        let converted_messages: Vec<Message> = msg_vec.iter().map(|msg| Message {
+            id: msg["messageId"].as_str().unwrap().parse().unwrap(),
+            sender_first_name: String::from("user"),
+            sender_last_name: String::from("user"),
+            topic: msg["topic"].as_str().unwrap().to_string(),
+            content: None,
+            send_date: msg["sendDate"].as_str().unwrap().to_string(),
+            receivers: None,
+            client: &self.client,
+            message_type: MessageType::Trash,
+        }).collect();
 
-        Ok(())
+        Ok(converted_messages)
     }
 }
