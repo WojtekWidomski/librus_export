@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Context, Ok, Result};
+use base64::prelude::*;
 use serde::Serialize;
 use serde_json::Value;
-use base64::prelude::*;
 
 const AUTH_URL1: &str =
     "https://api.librus.pl/OAuth/Authorization?client_id=46&response_type=code&scope=mydata";
@@ -28,7 +28,7 @@ struct User {
 enum MessageType {
     Inbox,
     Sent,
-    Trash
+    Trash,
 }
 
 #[derive(Debug)]
@@ -41,7 +41,7 @@ pub struct Message<'a> {
     send_date: String,
     receivers: Option<Vec<User>>,
     client: &'a reqwest::blocking::Client,
-    message_type: MessageType
+    message_type: MessageType,
 }
 
 impl<'a> Message<'a> {
@@ -67,17 +67,16 @@ impl<'a> Message<'a> {
             MessageType::Trash => "content",
         };
 
-
         let content = msg_deserialized["data"][content_field]
             .as_str()
-            .context("Failed to derserialize message")?.to_string();
+            .context("Failed to derserialize message")?
+            .to_string();
 
         let content = String::from_utf8(BASE64_STANDARD.decode(content)?)?;
 
         self.content = Some(content.clone());
 
         Ok(content)
-
     }
 }
 
@@ -192,7 +191,7 @@ impl SynergiaClient {
                 send_date: msg["sendDate"].as_str().unwrap().to_string(),
                 receivers: None,
                 client: &self.client,
-                message_type: MessageType::Sent
+                message_type: MessageType::Sent,
             })
             .collect();
 
