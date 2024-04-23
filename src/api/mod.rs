@@ -4,8 +4,10 @@ pub mod messages;
 use anyhow::{Context, Ok, Result};
 use serde_json::Value;
 
-
-use self::{authentication::authenticate, messages::{MessageHandle, MessageType}};
+use self::{
+    authentication::authenticate,
+    messages::{MessageHandle, MessageType},
+};
 
 pub struct SynergiaClient {
     client: reqwest::blocking::Client,
@@ -22,7 +24,11 @@ impl SynergiaClient {
         Ok(SynergiaClient { client })
     }
 
-    pub fn get_messages(&self, archive: bool, message_type: MessageType) -> Result<Vec<MessageHandle>> {
+    pub fn get_messages(
+        &self,
+        archive: bool,
+        message_type: MessageType,
+    ) -> Result<Vec<MessageHandle>> {
         let folder_path = message_type.get_path(archive);
 
         // Get only first message, because API will return all messages count at the same time
@@ -55,12 +61,17 @@ impl SynergiaClient {
 
         let msg_vec: Vec<MessageHandle> = msg_list["data"]
             .as_array()
-            .context("Message deserialization error")?.iter().map(|msg| MessageHandle {
-                id: msg["messageId"].as_str().unwrap().parse().unwrap(),
-                message_type,
-                in_archive: archive,
-                client: &self.client,
-            }).collect();
+            .context("Message deserialization error")?
+            .iter()
+            .map(|msg| {
+                MessageHandle::new(
+                    archive,
+                    message_type,
+                    msg["messageId"].as_str().unwrap().parse().unwrap(),
+                    &self.client,
+                )
+            })
+            .collect();
 
         Ok(msg_vec)
     }

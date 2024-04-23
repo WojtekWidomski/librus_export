@@ -43,16 +43,29 @@ pub struct Message {
     pub receivers: Option<Vec<User>>,
 }
 
-
 #[derive(Debug)]
 pub struct MessageHandle<'a> {
-    pub id: i64,
-    pub message_type: MessageType,
-    pub in_archive: bool,
-    pub client: &'a reqwest::blocking::Client,
+    in_archive: bool,
+    message_type: MessageType,
+    id: i64,
+    client: &'a reqwest::blocking::Client,
 }
 
 impl<'a> MessageHandle<'a> {
+    pub fn new(
+        in_archive: bool,
+        message_type: MessageType,
+        id: i64,
+        client: &'a reqwest::blocking::Client,
+    ) -> Self {
+        MessageHandle {
+            in_archive,
+            message_type,
+            id,
+            client,
+        }
+    }
+
     pub fn get_message(&mut self) -> Result<Message> {
         let folder_path = self.message_type.get_path(self.in_archive);
 
