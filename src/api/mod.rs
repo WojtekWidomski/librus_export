@@ -46,11 +46,10 @@ impl SynergiaClient {
 
     pub fn get_messages(
         &self,
-        archive: bool,
+        in_archive: bool,
         message_type: MessageType,
     ) -> Result<Vec<MessageHandle>> {
-        let folder_path = message_type.get_path(archive);
-
+        let folder_path = message_type.get_path(in_archive);
         let msg_count = self.get_message_count(&folder_path)?;
 
         // Get msg_count messages.
@@ -62,16 +61,16 @@ impl SynergiaClient {
             ))
             .send()?;
 
-        let msg_list: Value = serde_json::from_str(messages_res.text()?.as_str())
+        let res_deserialized: Value = serde_json::from_str(messages_res.text()?.as_str())
             .context("Messages deserialization error")?;
 
-        let msg_vec_result: Result<Vec<MessageHandle>> = msg_list["data"]
+        let handles_result: Result<Vec<MessageHandle>> = res_deserialized["data"]
             .as_array()
             .context("Message deserialization error")?
             .iter()
             .map(|msg| {
                 Ok(MessageHandle::new(
-                    archive,
+                    in_archive,
                     message_type,
                     msg["messageId"]
                         .as_str()
@@ -82,8 +81,8 @@ impl SynergiaClient {
             })
             .collect();
 
-        let msg_vec = msg_vec_result?;
+        let handles = handles_result?;
 
-        Ok(msg_vec)
+        Ok(handles)
     }
 }
