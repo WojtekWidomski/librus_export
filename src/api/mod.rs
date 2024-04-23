@@ -14,6 +14,7 @@ pub struct SynergiaClient {
 }
 
 impl SynergiaClient {
+    /// Create new `SynergiaClient` struct logged in as user with username and password.
     pub fn login(username: &str, password: &str) -> Result<Self> {
         let client = reqwest::blocking::ClientBuilder::new()
             .cookie_store(true)
@@ -61,6 +62,7 @@ impl SynergiaClient {
             ))
             .send()?;
 
+        // Deserialize messages
         let res_deserialized: Value = serde_json::from_str(messages_res.text()?.as_str())
             .context("Messages deserialization error")?;
 
