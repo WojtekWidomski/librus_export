@@ -59,19 +59,24 @@ impl SynergiaClient {
         let msg_list: Value = serde_json::from_str(messages_res.text()?.as_str())
             .context("Messages deserialization error")?;
 
-        let msg_vec: Vec<MessageHandle> = msg_list["data"]
+        let msg_vec_result: Result<Vec<MessageHandle>> = msg_list["data"]
             .as_array()
             .context("Message deserialization error")?
             .iter()
             .map(|msg| {
-                MessageHandle::new(
+                Ok(MessageHandle::new(
                     archive,
                     message_type,
-                    msg["messageId"].as_str().unwrap().parse().unwrap(),
+                    msg["messageId"]
+                        .as_str()
+                        .context("Message id parsing error")?
+                        .parse()?,
                     &self.client,
-                )
+                ))
             })
             .collect();
+
+        let msg_vec = msg_vec_result?;
 
         Ok(msg_vec)
     }
