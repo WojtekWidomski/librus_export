@@ -24,13 +24,7 @@ impl SynergiaClient {
         Ok(SynergiaClient { client })
     }
 
-    pub fn get_messages(
-        &self,
-        archive: bool,
-        message_type: MessageType,
-    ) -> Result<Vec<MessageHandle>> {
-        let folder_path = message_type.get_path(archive);
-
+    fn get_message_count(&self, folder_path: &String) -> Result<i64> {
         // Get only first message, because API will return all messages count at the same time
         let messages_res = self
             .client
@@ -46,6 +40,18 @@ impl SynergiaClient {
         let msg_count = &first_msg["total"]
             .as_i64()
             .context("Failed to get message number")?;
+
+        Ok(*msg_count)
+    }
+
+    pub fn get_messages(
+        &self,
+        archive: bool,
+        message_type: MessageType,
+    ) -> Result<Vec<MessageHandle>> {
+        let folder_path = message_type.get_path(archive);
+
+        let msg_count = self.get_message_count(&folder_path)?;
 
         // Get msg_count messages.
         let messages_res = self
