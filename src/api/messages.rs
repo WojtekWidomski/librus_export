@@ -3,7 +3,7 @@ use base64::prelude::*;
 use serde_json::Value;
 
 // There are 3 message types in Librus and they use different API.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum MessageType {
     Inbox,
     Sent,
@@ -11,7 +11,7 @@ pub enum MessageType {
 }
 
 impl MessageType {
-    fn get_path(&self, archive: bool) -> String {
+    pub fn get_path(&self, archive: bool) -> String {
         let path_end = match self {
             MessageType::Inbox => "inbox",
             MessageType::Sent => "outbox",
@@ -34,29 +34,33 @@ pub struct User {
 }
 
 #[derive(Debug)]
-pub struct Message<'a> {
-    pub id: i64,
+pub struct Message {
     pub sender_first_name: String,
     pub sender_last_name: String,
     pub topic: String,
-    pub content: Option<String>,
+    pub content: String,
     pub send_date: String,
     pub receivers: Option<Vec<User>>,
-    pub client: &'a reqwest::blocking::Client,
-    pub message_type: MessageType,
 }
 
-impl<'a> Message<'a> {
-    pub fn get_content(&mut self) -> Result<String> {
-        if let Some(saved_content) = &self.content {
-            return Ok(saved_content.to_string());
-        }
+
+#[derive(Debug)]
+pub struct MessageHandle<'a> {
+    pub id: i64,
+    pub message_type: MessageType,
+    pub in_archive: bool,
+    pub client: &'a reqwest::blocking::Client,
+}
+
+impl<'a> MessageHandle<'a> {
+    pub fn get_message(&mut self) -> Result<Message> {
+        let folder_path = self.message_type.get_path(self.in_archive);
 
         let msg = self
             .client
             .get(format!(
-                "https://wiadomosci.librus.pl/api/trash-bin/messages/{}",
-                self.id
+                "https://wiadomosci.librus.pl/api/{}/messages/{}",
+                folder_path, self.id
             ))
             .send()?
             .text()?;
@@ -76,8 +80,13 @@ impl<'a> Message<'a> {
 
         let content = String::from_utf8(BASE64_STANDARD.decode(content)?)?;
 
-        self.content = Some(content.clone());
-
-        Ok(content)
+        Ok(Message {
+            sender_first_name: "".to_string(),
+            sender_last_name: "".to_string(),
+            topic: "".to_string(),
+            content,
+            send_date: "".to_string(),
+            receivers: None,
+        })
     }
 }
