@@ -81,8 +81,8 @@ impl<'a> MessageHandle<'a> {
         let msg_deserialized: Value = serde_json::from_str(&msg)?;
 
         let content_field = match self.message_type {
-            MessageType::Inbox => "Message",
-            MessageType::Sent => "Message",
+            MessageType::Inbox => "content",
+            MessageType::Sent => "Message", // why Message not content?
             MessageType::Trash => "content",
         };
 
