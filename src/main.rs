@@ -1,3 +1,5 @@
+use librus_export::cli::run_cli;
+
 fn main() {
-    println!("Hello, world!");
+    run_cli();
 }
