@@ -91,14 +91,25 @@ impl<'a> MessageHandle<'a> {
             .context("Failed to derserialize message")?
             .to_string();
 
+        // Message content in Librus is encoded using base64
         let content = String::from_utf8(BASE64_STANDARD.decode(content)?)?;
+
+        let topic = msg_deserialized["data"]["topic"]
+            .as_str()
+            .context("Failed to deserialize message")?
+            .to_string();
+
+        let send_date = msg_deserialized["data"]["sendDate"]
+            .as_str()
+            .context("Failed to get send date")?
+            .to_string();
 
         Ok(Message {
             sender_first_name: "".to_string(),
             sender_last_name: "".to_string(),
-            topic: "".to_string(),
+            topic,
             content,
-            send_date: "".to_string(),
+            send_date,
             receivers: None,
         })
     }
