@@ -41,6 +41,32 @@ pub struct Message {
     pub receivers: Vec<User>,
 }
 
+fn parse_receivers(receivers_value: &Value) -> Result<Vec<User>> {
+    const ERROR_MESSAGE: &str = "Receivers parsing error";
+
+    let rec_vec_res: Result<Vec<User>> = receivers_value
+        .as_array()
+        .context(ERROR_MESSAGE)?
+        .iter()
+        .map(|user| {
+            Ok(User {
+                first_name: user["firstName"]
+                    .as_str()
+                    .context(ERROR_MESSAGE)?
+                    .to_string(),
+                last_name: user["lastName"]
+                    .as_str()
+                    .context(ERROR_MESSAGE)?
+                    .to_string(),
+            })
+        })
+        .collect();
+
+    let rec_vec = rec_vec_res?;
+
+    Ok(rec_vec)
+}
+
 #[derive(Debug)]
 pub struct MessageHandle<'a> {
     in_archive: bool,
@@ -111,6 +137,8 @@ impl<'a> MessageHandle<'a> {
             .context("Failed to get sender name")?
             .to_string();
 
+        let receivers = parse_receivers(&msg_deserialized["data"]["receivers"])?;
+
         Ok(Message {
             topic,
             content,
@@ -119,7 +147,7 @@ impl<'a> MessageHandle<'a> {
                 first_name: sender_first_name,
                 last_name: sender_last_name,
             },
-            receivers: Vec::new(),
+            receivers: receivers,
         })
     }
 }
