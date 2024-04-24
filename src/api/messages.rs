@@ -147,7 +147,7 @@ impl<'a> MessageHandle<'a> {
                 first_name: sender_first_name,
                 last_name: sender_last_name,
             },
-            receivers: receivers,
+            receivers,
         })
     }
 }
