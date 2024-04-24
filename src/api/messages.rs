@@ -90,7 +90,7 @@ impl<'a> MessageHandle<'a> {
         }
     }
 
-    pub fn get_message(&mut self) -> Result<Message> {
+    pub fn get_message(&self) -> Result<Message> {
         let folder_path = self.message_type.get_path(self.in_archive);
 
         let msg = self
