@@ -50,14 +50,8 @@ fn parse_receivers(receivers_value: &Value) -> Result<Vec<User>> {
         .iter()
         .map(|user| {
             Ok(User {
-                first_name: user["firstName"]
-                    .as_str()
-                    .context(ERROR_MESSAGE)?
-                    .to_string(),
-                last_name: user["lastName"]
-                    .as_str()
-                    .context(ERROR_MESSAGE)?
-                    .to_string(),
+                first_name: user["firstName"].as_str().unwrap_or("").to_string(),
+                last_name: user["lastName"].as_str().unwrap_or("").to_string(),
             })
         })
         .collect();
