@@ -1,3 +1,5 @@
+use std::sync::mpsc::Sender;
+
 use anyhow::{Context, Ok, Result};
 use base64::prelude::*;
 use serde_json::Value;
@@ -28,19 +30,17 @@ impl MessageType {
 
 #[derive(Debug)]
 pub struct User {
-    id: i32,
     first_name: String,
     last_name: String,
 }
 
 #[derive(Debug)]
 pub struct Message {
-    pub sender_first_name: String,
-    pub sender_last_name: String,
+    pub sender: User,
     pub topic: String,
     pub content: String,
     pub send_date: String,
-    pub receivers: Option<Vec<User>>,
+    pub receivers: Vec<User>,
 }
 
 #[derive(Debug)]
@@ -104,13 +104,24 @@ impl<'a> MessageHandle<'a> {
             .context("Failed to get send date")?
             .to_string();
 
+        let sender_first_name = msg_deserialized["data"]["senderFirstName"]
+            .as_str()
+            .context("Failed to get sender name")?
+            .to_string();
+        let sender_last_name = msg_deserialized["data"]["senderLastName"]
+            .as_str()
+            .context("Failed to get sender name")?
+            .to_string();
+
         Ok(Message {
-            sender_first_name: "".to_string(),
-            sender_last_name: "".to_string(),
             topic,
             content,
             send_date,
-            receivers: None,
+            sender: User {
+                first_name: sender_first_name,
+                last_name: sender_last_name,
+            },
+            receivers: Vec::new(),
         })
     }
 }
