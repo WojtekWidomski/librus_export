@@ -1,5 +1,3 @@
-use std::sync::mpsc::Sender;
-
 use anyhow::{Context, Ok, Result};
 use base64::prelude::*;
 use serde_json::Value;
