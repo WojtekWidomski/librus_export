@@ -1,28 +1,48 @@
 mod authentication;
 pub mod messages;
 
+use std::collections::HashSet;
+
 use anyhow::{Context, Ok, Result};
 use serde_json::Value;
 
 use self::{
     authentication::authenticate,
-    messages::{MessageHandle, MessageType},
+    messages::{MessageHandle, MessageType, User},
 };
 
 pub struct SynergiaClient {
     client: reqwest::blocking::Client,
+    receivers_groups: Vec<HashSet<User>>,
+    min_big_group: usize,
 }
 
 impl SynergiaClient {
     /// Create new `SynergiaClient` struct logged in as user with username and password.
-    pub fn login(username: &str, password: &str) -> Result<Self> {
+    pub fn login(username: &str, password: &str, min_big_group: usize) -> Result<Self> {
         let client = reqwest::blocking::ClientBuilder::new()
             .cookie_store(true)
             .build()?;
 
         authenticate(&client, username, password)?;
 
-        Ok(SynergiaClient { client })
+        Ok(SynergiaClient {
+            client,
+            min_big_group,
+            receivers_groups: Vec::new(),
+        })
+    }
+
+    fn get_group(&mut self, users: HashSet<User>) -> usize {
+        for (idx, group) in self.receivers_groups.iter().enumerate() {
+            if *group == users {
+                return idx;
+            }
+        }
+
+        self.receivers_groups.push(users);
+
+        self.receivers_groups.len() - 1
     }
 
     fn get_message_count(&self, folder_path: &String) -> Result<i64> {

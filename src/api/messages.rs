@@ -26,7 +26,7 @@ impl MessageType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, Hash, PartialEq)]
 pub struct User {
     pub first_name: String,
     pub last_name: String,
