@@ -95,6 +95,19 @@ impl<'a> MessageHandle<'a> {
         }
     }
 
+    /// Remove content xml/html tagi. If they do not exist return content
+    fn remove_content_prefix_and_suffix(&self, content: String) -> String {
+        let without_pref = match content.strip_prefix("<Message><Content><![CDATA[") {
+            Some(text) => text.to_string(),
+            None => {return content},
+        };
+        let without_suf = match without_pref.strip_suffix("]]></Content><Actions><Actions/></Actions></Message>") {
+            Some(text) => text.to_string(),
+            None => {return content},
+        };
+        return without_suf;
+    }
+
     pub fn get_message(&self) -> Result<Message> {
         let folder_path = self.message_type.get_path(self.in_archive);
 
@@ -123,6 +136,8 @@ impl<'a> MessageHandle<'a> {
 
         // Message content in Librus is encoded using base64
         let content = String::from_utf8(BASE64_STANDARD.decode(content)?)?;
+
+        let content = self.remove_content_prefix_and_suffix(content);
 
         let topic = msg_deserialized["data"]["topic"]
             .as_str()
