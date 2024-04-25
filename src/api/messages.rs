@@ -2,6 +2,8 @@ use anyhow::{Context, Ok, Result};
 use base64::prelude::*;
 use serde_json::Value;
 
+use super::SynergiaClient;
+
 // There are 3 message types in Librus and they use different API.
 #[derive(Debug, Clone, Copy)]
 pub enum MessageType {
@@ -66,7 +68,7 @@ pub struct MessageHandle<'a> {
     in_archive: bool,
     message_type: MessageType,
     id: i64,
-    client: &'a reqwest::blocking::Client,
+    synergia_client: &'a SynergiaClient,
 }
 
 impl<'a> MessageHandle<'a> {
@@ -74,13 +76,13 @@ impl<'a> MessageHandle<'a> {
         in_archive: bool,
         message_type: MessageType,
         id: i64,
-        client: &'a reqwest::blocking::Client,
+        client: &'a SynergiaClient,
     ) -> Self {
         MessageHandle {
             in_archive,
             message_type,
             id,
-            client,
+            synergia_client: client,
         }
     }
 
@@ -88,6 +90,7 @@ impl<'a> MessageHandle<'a> {
         let folder_path = self.message_type.get_path(self.in_archive);
 
         let msg = self
+            .synergia_client
             .client
             .get(format!(
                 "https://wiadomosci.librus.pl/api/{}/messages/{}",

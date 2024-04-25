@@ -98,7 +98,7 @@ impl SynergiaClient {
                         .as_str()
                         .context("Message id parsing error")?
                         .parse()?,
-                    &self.client,
+                    &self,
                 ))
             })
             .collect();
