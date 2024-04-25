@@ -47,6 +47,11 @@ impl SynergiaClient {
         receivers_groups.len() - 1
     }
 
+    /// Get copy of user groups
+    pub fn get_receivers_groups(&self) -> Vec<HashSet<User>> {
+        (*self.receivers_groups.borrow()).clone()
+    }
+
     fn get_message_count(&self, folder_path: &String) -> Result<i64> {
         // Get only first message, because API will return all messages count at the same time
         let messages_res = self
