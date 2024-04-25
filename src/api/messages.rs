@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use anyhow::{Context, Ok, Result};
 use base64::prelude::*;
 use serde_json::Value;
@@ -34,19 +36,27 @@ pub struct User {
     pub last_name: String,
 }
 
+/// Small group of users is stored as vector of users
+/// Large group is index in `receivers_groups` in `SynergiaClient`
+#[derive(Debug)]
+pub enum UserGroup {
+    Small(HashSet<User>),
+    Large(usize),
+}
+
 #[derive(Debug)]
 pub struct Message {
     pub sender: User,
     pub topic: String,
     pub content: String,
     pub send_date: String,
-    pub receivers: Vec<User>,
+    pub receivers: UserGroup,
 }
 
-fn parse_receivers(receivers_value: &Value) -> Result<Vec<User>> {
+fn parse_receivers(receivers_value: &Value) -> Result<HashSet<User>> {
     const ERROR_MESSAGE: &str = "Receivers parsing error";
 
-    let rec_vec_res: Result<Vec<User>> = receivers_value
+    let rec_vec_res: Result<HashSet<User>> = receivers_value
         .as_array()
         .context(ERROR_MESSAGE)?
         .iter()
@@ -63,7 +73,6 @@ fn parse_receivers(receivers_value: &Value) -> Result<Vec<User>> {
     Ok(rec_vec)
 }
 
-#[derive(Debug)]
 pub struct MessageHandle<'a> {
     in_archive: bool,
     message_type: MessageType,
@@ -134,7 +143,13 @@ impl<'a> MessageHandle<'a> {
             .context("Failed to get sender name")?
             .to_string();
 
-        let receivers = parse_receivers(&msg_deserialized["data"]["receivers"])?;
+        let receivers_set = parse_receivers(&msg_deserialized["data"]["receivers"])?;
+
+        let receivers = if receivers_set.len() >= self.synergia_client.min_big_group {
+            UserGroup::Large(self.synergia_client.get_group(receivers_set))
+        } else {
+            UserGroup::Small(receivers_set)
+        };
 
         Ok(Message {
             topic,

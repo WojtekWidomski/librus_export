@@ -1,7 +1,7 @@
 mod authentication;
 pub mod messages;
 
-use std::collections::HashSet;
+use std::{cell::RefCell, collections::HashSet};
 
 use anyhow::{Context, Ok, Result};
 use serde_json::Value;
@@ -13,7 +13,7 @@ use self::{
 
 pub struct SynergiaClient {
     client: reqwest::blocking::Client,
-    receivers_groups: Vec<HashSet<User>>,
+    receivers_groups: RefCell<Vec<HashSet<User>>>,
     min_big_group: usize,
 }
 
@@ -29,20 +29,22 @@ impl SynergiaClient {
         Ok(SynergiaClient {
             client,
             min_big_group,
-            receivers_groups: Vec::new(),
+            receivers_groups: RefCell::new(Vec::new()),
         })
     }
 
-    fn get_group(&mut self, users: HashSet<User>) -> usize {
-        for (idx, group) in self.receivers_groups.iter().enumerate() {
+    fn get_group(&self, users: HashSet<User>) -> usize {
+        let mut receivers_groups = self.receivers_groups.borrow_mut();
+
+        for (idx, group) in receivers_groups.iter().enumerate() {
             if *group == users {
                 return idx;
             }
         }
 
-        self.receivers_groups.push(users);
+        receivers_groups.push(users);
 
-        self.receivers_groups.len() - 1
+        receivers_groups.len() - 1
     }
 
     fn get_message_count(&self, folder_path: &String) -> Result<i64> {
@@ -98,7 +100,7 @@ impl SynergiaClient {
                         .as_str()
                         .context("Message id parsing error")?
                         .parse()?,
-                    &self,
+                    self,
                 ))
             })
             .collect();
