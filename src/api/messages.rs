@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use anyhow::{Context, Ok, Result};
 use base64::prelude::*;
+use serde::Serialize;
 use serde_json::Value;
 
 use super::SynergiaClient;
@@ -30,7 +31,7 @@ impl MessageType {
     }
 }
 
-#[derive(Debug, Eq, Hash, PartialEq, Clone)]
+#[derive(Debug, Eq, Hash, PartialEq, Clone, Serialize)]
 pub struct User {
     pub first_name: String,
     pub last_name: String,
@@ -38,13 +39,13 @@ pub struct User {
 
 /// Small group of users is stored as vector of users
 /// Large group is index in `receivers_groups` in `SynergiaClient`
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum UserGroup {
     Small(HashSet<User>),
     Large(usize),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Message {
     pub sender: User,
     pub topic: String,
