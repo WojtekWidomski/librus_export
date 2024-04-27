@@ -27,3 +27,8 @@ The program will ask, how many users should be considered as big group. Small gr
 This is useful, because some teachers very often send messages to all students in the school.
 
 Then the program will ask for username and password. Then you will have to choose, which folder to download. By default all folders are selected.
+
+## Used technologies
+- Rust programming language
+- Please see [Cargo.toml](Cargo.toml) for used crates
+- Altough [this repository](https://github.com/kbaraniak/librus-api/) is not a dependency of this program, I used it as a refecence, when implementing authentication.
