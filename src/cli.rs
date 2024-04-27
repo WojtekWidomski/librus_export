@@ -4,6 +4,8 @@ use anyhow::{anyhow, Ok, Result};
 use dialoguer::{Input, MultiSelect, Password};
 use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 use crate::api::{
     messages::{Message, MessageType},
     SynergiaClient,
@@ -22,6 +24,11 @@ impl ToString for MessageFolder {
     }
 }
 
+fn display_welcome_message() {
+    println!("LIBRUS Synergia Message Export version {}", VERSION);
+    println!(""); // Empty line
+}
+
 fn login() -> SynergiaClient {
     println!("Some teachers often send messages to very large group of users");
     println!("(e.g. all students in the school). This program can save such");
@@ -36,6 +43,8 @@ fn login() -> SynergiaClient {
         .show_default(true)
         .interact()
         .unwrap();
+
+    println!("");
 
     println!("Log in to your LIBRUS Synergia account.");
     println!("Remember to use Synergia account and not LIBRUS mobile app account.");
@@ -174,9 +183,16 @@ fn download_groups_to_file(client: &SynergiaClient, filename: String) -> Result<
 }
 
 pub fn run_cli() -> Result<()> {
+    display_welcome_message();
+
     let client = login();
 
     let account_info = client.get_account_name()?;
+
+    println!(
+        "Logged in as {} {}\n",
+        account_info.first_name, account_info.last_name
+    );
 
     let export_folder = format!(
         "export_{}_{}",
@@ -190,6 +206,8 @@ pub fn run_cli() -> Result<()> {
     download_selected(&client, &export_folder)?;
 
     download_groups_to_file(&client, format!("{}/groups.json", export_folder))?;
+
+    println!("Succesfully exported to {}", export_folder);
 
     Ok(())
 }
