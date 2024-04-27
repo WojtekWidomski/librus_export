@@ -15,7 +15,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install gcc-mingw-w64-x86-64
-      run: apt install gcc-mingw-w64-x86-64
+      run: sudo apt-get install gcc-mingw-w64-x86-64
     - name: Add Windows build target
       run: rustup target add x86_64-pc-windows-gnu
     - name: Build release for Linux
