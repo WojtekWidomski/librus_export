@@ -1,12 +1,25 @@
 use std::{fs, path::Path};
 
-use anyhow::{Ok, Result, anyhow};
-use dialoguer::{Input, Password};
+use anyhow::{anyhow, Ok, Result};
+use dialoguer::{Input, MultiSelect, Password};
 
 use crate::api::{
     messages::{Message, MessageType},
     SynergiaClient,
 };
+
+struct MessageFolder {
+    displayed_name: String,
+    in_archive: bool,
+    message_type: MessageType,
+    filename: String,
+}
+
+impl ToString for MessageFolder {
+    fn to_string(&self) -> String {
+        self.displayed_name.clone()
+    }
+}
 
 fn login() -> SynergiaClient {
     println!("Some teachers often send messages to very large group of users");
@@ -50,24 +63,19 @@ fn login() -> SynergiaClient {
     }
 }
 
-fn download_messages_to_file(
-    client: &SynergiaClient,
-    in_archive: bool,
-    msg_type: MessageType,
-    filename: &str,
-) -> Result<()> {
-    let handles = client.get_messages(in_archive, msg_type)?;
+fn download_messages_to_file(client: &SynergiaClient, folder: &MessageFolder) -> Result<()> {
+    let handles = client.get_messages(folder.in_archive, folder.message_type)?;
 
     let messages: Result<Vec<Message>> = handles.iter().map(|h| Ok(h.get_message()?)).collect();
     let messages = messages?;
 
     let messages_json = serde_json::to_string_pretty(&messages)?;
 
-    if Path::new(filename).exists() {
-        return Err(anyhow!("File {} already exists", filename));
+    if Path::new(&folder.filename).exists() {
+        return Err(anyhow!("File {} already exists", &folder.filename));
     }
 
-    fs::write(filename, messages_json)?;
+    fs::write(&folder.filename, messages_json)?;
 
     Ok(())
 }
@@ -75,5 +83,56 @@ fn download_messages_to_file(
 pub fn run_cli() {
     let client = login();
 
-    download_messages_to_file(&client, false, MessageType::Sent, "messages.json").unwrap();
+    let folders = vec![
+        MessageFolder {
+            displayed_name: String::from("Inbox"),
+            in_archive: false,
+            message_type: MessageType::Inbox,
+            filename: String::from("messages_inbox.json"),
+        },
+        MessageFolder {
+            displayed_name: String::from("Sent"),
+            in_archive: false,
+            message_type: MessageType::Sent,
+            filename: String::from("messages_sent.json"),
+        },
+        MessageFolder {
+            displayed_name: String::from("Trash"),
+            in_archive: false,
+            message_type: MessageType::Trash,
+            filename: String::from("messages_trash.json"),
+        },
+        MessageFolder {
+            displayed_name: String::from("Archive/Inbox"),
+            in_archive: true,
+            message_type: MessageType::Inbox,
+            filename: String::from("messages_archive_inbox.json"),
+        },
+        MessageFolder {
+            displayed_name: String::from("Archive/Sent"),
+            in_archive: true,
+            message_type: MessageType::Sent,
+            filename: String::from("messages_archive_sent.json"),
+        },
+        MessageFolder {
+            displayed_name: String::from("Archive/Trash"),
+            in_archive: true,
+            message_type: MessageType::Trash,
+            filename: String::from("messages_archive_trash.json"),
+        },
+    ];
+
+    let selected_folders = MultiSelect::new()
+        .with_prompt(
+            "Select folders to download\nUse arrows and space to select. Enter to confirm.",
+        )
+        .items(&folders)
+        .defaults(&vec![true; folders.len()])
+        .interact()
+        .unwrap();
+
+    for folder_idx in selected_folders {
+        let folder = &folders[folder_idx];
+        download_messages_to_file(&client, folder).unwrap();
+    }
 }
