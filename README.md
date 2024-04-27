@@ -1,5 +1,7 @@
 # LIBRUS Synergia Message Export
 
+[Polski opis](README_pl.md)
+
 This program allows to download all messages from your Librus Synergia account and save them in JSON format. (Librus Synergia is electronic grade book system used in many schools in Poland.)
 
 ## Features
