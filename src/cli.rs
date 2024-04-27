@@ -63,24 +63,26 @@ fn login() -> SynergiaClient {
     }
 }
 
-fn download_messages_to_file(client: &SynergiaClient, folder: &MessageFolder) -> Result<()> {
-    let handles = client.get_messages(folder.in_archive, folder.message_type)?;
+fn download_messages_to_file(client: &SynergiaClient, librus_folder: &MessageFolder, export_folder: &String) -> Result<()> {
+    let handles = client.get_messages(librus_folder.in_archive, librus_folder.message_type)?;
 
     let messages: Result<Vec<Message>> = handles.iter().map(|h| Ok(h.get_message()?)).collect();
     let messages = messages?;
 
     let messages_json = serde_json::to_string_pretty(&messages)?;
 
-    if Path::new(&folder.filename).exists() {
-        return Err(anyhow!("File {} already exists", &folder.filename));
+    let export_path = format!("{}/{}", export_folder, librus_folder.filename);
+
+    if Path::new(&export_path).exists() {
+        return Err(anyhow!("File {} already exists", &librus_folder.filename));
     }
 
-    fs::write(&folder.filename, messages_json)?;
+    fs::write(&export_path, messages_json)?;
 
     Ok(())
 }
 
-fn download_selected(client: &SynergiaClient) -> Result<()> {
+fn download_selected(client: &SynergiaClient, export_folder: &String) -> Result<()> {
     let folders = vec![
         MessageFolder {
             displayed_name: String::from("Inbox"),
@@ -130,7 +132,7 @@ fn download_selected(client: &SynergiaClient) -> Result<()> {
 
     for folder_idx in selected_folders {
         let folder = &folders[folder_idx];
-        download_messages_to_file(&client, folder)?;
+        download_messages_to_file(&client, folder, export_folder)?;
     }
 
     Ok(())
@@ -153,9 +155,16 @@ fn download_groups_to_file(client: &SynergiaClient, filename: String) -> Result<
 pub fn run_cli() -> Result<()> {
     let client = login();
 
-    download_selected(&client)?;
+    let account_info = client.get_account_name()?;
 
-    download_groups_to_file(&client, String::from("groups.json"))?;
+    let export_folder = format!(
+        "export_{}_{}",
+        account_info.first_name, account_info.last_name
+    );
+
+    download_selected(&client, &export_folder)?;
+
+    download_groups_to_file(&client, format!("{}/groups.json", export_folder))?;
 
     Ok(())
 }
