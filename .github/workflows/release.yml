@@ -1,0 +1,31 @@
+name: Build Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Add Windows build target
+      run: rustup target add x86_64-pc-windows-gnu
+    - name: Build release for Linux
+      run: cargo build --release --verbose
+    - name: Build release for Windows
+      run: cargo build --release --target x86_64-pc-windows-gnu --verbose
+    - name: Upload a Linux Build Artifact
+      uses: actions/upload-artifact@v4.3.3
+      with:
+        name: librus_export
+        path: target/release/librus_export
+    - name: Upload a Windows Build Artifact
+      uses: actions/upload-artifact@v4.3.3
+      with:
+        name: librus_export.exe
+        path: target/x86_64-pc-windows-gnu/release/librus_export.exe
