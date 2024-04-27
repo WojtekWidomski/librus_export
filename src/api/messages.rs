@@ -100,11 +100,13 @@ impl<'a> MessageHandle<'a> {
     fn remove_content_prefix_and_suffix(&self, content: String) -> String {
         let without_pref = match content.strip_prefix("<Message><Content><![CDATA[") {
             Some(text) => text.to_string(),
-            None => {return content},
+            None => return content,
         };
-        let without_suf = match without_pref.strip_suffix("]]></Content><Actions><Actions/></Actions></Message>") {
+        let without_suf = match without_pref
+            .strip_suffix("]]></Content><Actions><Actions/></Actions></Message>")
+        {
             Some(text) => text.to_string(),
-            None => {return content},
+            None => return content,
         };
         return without_suf;
     }
@@ -161,7 +163,9 @@ impl<'a> MessageHandle<'a> {
 
         let receivers_set = parse_receivers(&msg_deserialized["data"]["receivers"])?;
 
-        let receivers = if receivers_set.len() >= self.synergia_client.min_big_group {
+        let receivers = if self.synergia_client.min_big_group != 0
+            && receivers_set.len() >= self.synergia_client.min_big_group
+        {
             UserGroup::Large(self.synergia_client.get_group(receivers_set))
         } else {
             UserGroup::Small(receivers_set)
