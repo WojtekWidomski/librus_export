@@ -1,7 +1,8 @@
-use std::{fs, path::Path};
+use std::{fs, path::Path, time::Duration};
 
 use anyhow::{anyhow, Ok, Result};
 use dialoguer::{Input, MultiSelect, Password};
+use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
 
 use crate::api::{
     messages::{Message, MessageType},
@@ -48,8 +49,13 @@ fn login() -> SynergiaClient {
 
         let password = Password::new().with_prompt("Password").interact().unwrap();
 
+        let spinner = ProgressBar::new_spinner().with_message("Logging in...");
+        spinner.enable_steady_tick(Duration::from_millis(100));
+
         let client_result =
             SynergiaClient::login(username.as_str(), password.as_str(), min_big_groups);
+
+        spinner.finish_and_clear();
 
         match client_result {
             std::result::Result::Ok(client) => {
@@ -63,10 +69,25 @@ fn login() -> SynergiaClient {
     }
 }
 
-fn download_messages_to_file(client: &SynergiaClient, librus_folder: &MessageFolder, export_folder: &String) -> Result<()> {
+fn download_messages_to_file(
+    client: &SynergiaClient,
+    librus_folder: &MessageFolder,
+    export_folder: &String,
+) -> Result<()> {
     let handles = client.get_messages(librus_folder.in_archive, librus_folder.message_type)?;
 
-    let messages: Result<Vec<Message>> = handles.iter().map(|h| Ok(h.get_message()?)).collect();
+    let progress_style =
+        ProgressStyle::with_template("{prefix:16}{bar:60.cyan/blue} [{pos}/{len}]").unwrap();
+
+    let pb = ProgressBar::new(handles.len() as u64)
+        .with_style(progress_style)
+        .with_prefix(librus_folder.displayed_name.clone());
+
+    let messages: Result<Vec<Message>> = handles
+        .iter()
+        .progress_with(pb)
+        .map(|h| Ok(h.get_message()?))
+        .collect();
     let messages = messages?;
 
     let messages_json = serde_json::to_string_pretty(&messages)?;
