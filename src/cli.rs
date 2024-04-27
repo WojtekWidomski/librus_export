@@ -80,9 +80,7 @@ fn download_messages_to_file(client: &SynergiaClient, folder: &MessageFolder) ->
     Ok(())
 }
 
-pub fn run_cli() -> Result<()> {
-    let client = login();
-
+fn download_selected(client: &SynergiaClient) -> Result<()> {
     let folders = vec![
         MessageFolder {
             displayed_name: String::from("Inbox"),
@@ -134,6 +132,16 @@ pub fn run_cli() -> Result<()> {
         let folder = &folders[folder_idx];
         download_messages_to_file(&client, folder)?;
     }
+
+    Ok(())
+}
+
+pub fn run_cli() -> Result<()> {
+    let client = login();
+
+    download_selected(&client)?;
+
+
 
     Ok(())
 }
