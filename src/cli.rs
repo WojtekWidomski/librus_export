@@ -5,6 +5,8 @@ use dialoguer::{Input, MultiSelect, Password};
 use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
+const AUTHOR: &str = env!("CARGO_PKG_AUTHORS");
+const REPO: &str = env!("CARGO_PKG_REPOSITORY");
 
 use crate::api::{
     messages::{Message, MessageType},
@@ -26,6 +28,8 @@ impl ToString for MessageFolder {
 
 fn display_welcome_message() {
     println!("LIBRUS Synergia Message Export version {}", VERSION);
+    println!("Author: {}", AUTHOR);
+    println!("Source code available at {} on GPL-3.0 license", REPO);
     println!(""); // Empty line
 }
 
