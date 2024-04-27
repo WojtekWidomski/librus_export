@@ -80,7 +80,7 @@ fn download_messages_to_file(client: &SynergiaClient, folder: &MessageFolder) ->
     Ok(())
 }
 
-pub fn run_cli() {
+pub fn run_cli() -> Result<()> {
     let client = login();
 
     let folders = vec![
@@ -128,11 +128,12 @@ pub fn run_cli() {
         )
         .items(&folders)
         .defaults(&vec![true; folders.len()])
-        .interact()
-        .unwrap();
+        .interact()?;
 
     for folder_idx in selected_folders {
         let folder = &folders[folder_idx];
-        download_messages_to_file(&client, folder).unwrap();
+        download_messages_to_file(&client, folder)?;
     }
+
+    Ok(())
 }
