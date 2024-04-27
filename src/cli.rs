@@ -1,4 +1,6 @@
-use anyhow::{Ok, Result};
+use std::{fs, path::Path};
+
+use anyhow::{Ok, Result, anyhow};
 use dialoguer::{Input, Password};
 
 use crate::api::{
@@ -59,7 +61,13 @@ fn download_messages_to_file(
     let messages: Result<Vec<Message>> = handles.iter().map(|h| Ok(h.get_message()?)).collect();
     let messages = messages?;
 
-    // TODO: Save to file
+    let messages_json = serde_json::to_string_pretty(&messages)?;
+
+    if Path::new(filename).exists() {
+        return Err(anyhow!("File {} already exists", filename));
+    }
+
+    fs::write(filename, messages_json)?;
 
     Ok(())
 }
