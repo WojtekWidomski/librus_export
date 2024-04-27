@@ -162,6 +162,10 @@ pub fn run_cli() -> Result<()> {
         account_info.first_name, account_info.last_name
     );
 
+    if !Path::new(&export_folder).exists() {
+        fs::create_dir(&export_folder)?;
+    }
+
     download_selected(&client, &export_folder)?;
 
     download_groups_to_file(&client, format!("{}/groups.json", export_folder))?;
