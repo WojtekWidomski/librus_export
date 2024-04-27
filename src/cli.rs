@@ -136,12 +136,26 @@ fn download_selected(client: &SynergiaClient) -> Result<()> {
     Ok(())
 }
 
+fn download_groups_to_file(client: &SynergiaClient, filename: String) -> Result<()> {
+    let groups = client.get_receivers_groups();
+
+    let groups_json = serde_json::to_string_pretty(&groups)?;
+
+    if Path::new(&filename).exists() {
+        return Err(anyhow!("File {} already exists", &filename));
+    }
+
+    fs::write(&filename, groups_json)?;
+
+    Ok(())
+}
+
 pub fn run_cli() -> Result<()> {
     let client = login();
 
     download_selected(&client)?;
 
-
+    download_groups_to_file(&client, String::from("groups.json"))?;
 
     Ok(())
 }
