@@ -16,11 +16,9 @@ Following files are created:
 - `groups.json` - Groups of receivers
 
 ## Usage
-Clone this repository and run this program using this command:
+Download latest release from [Releases](https://github.com/WojtekWidomski/librus_export/releases) for your operating system. On Windows it is possible to run it by clicking it, but it is recommended to run it from command line to be able to see what happened in case of error.
 
-```
-cargo run --release
-```
+You can also clone this repository and build program and run it using `cargo run --release`.
 
 The program will ask, how many users should be considered as big group. Small group of receivers will be saved in the same file as messages. Big groups will be saved in array in separate file and only index in this array will be saved if file with messages. Default is 10.
 
