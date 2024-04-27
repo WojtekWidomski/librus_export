@@ -33,6 +33,30 @@ impl SynergiaClient {
         })
     }
 
+    pub fn get_account_name(&self) -> Result<User> {
+        let me_res = self
+            .client
+            .get("https://wiadomosci.librus.pl/api/me")
+            .send()?
+            .text()?;
+
+        let res_deserialized: Value = serde_json::from_str(&me_res)?;
+
+        let first_name = res_deserialized["firstName"]
+            .as_str()
+            .context("Failed to get first name")?
+            .to_string();
+        let last_name = res_deserialized["lastName"]
+            .as_str()
+            .context("Failed to get last name")?
+            .to_string();
+
+        Ok(User {
+            first_name,
+            last_name,
+        })
+    }
+
     fn get_group(&self, users: HashSet<User>) -> usize {
         let mut receivers_groups = self.receivers_groups.borrow_mut();
 
