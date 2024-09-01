@@ -2,7 +2,7 @@
 
 [English readme](README.md)
 
-Ten program umożliwia pobranie wszystkich wiadomośc z konta Librus Synergia i zapisanie ich w formacie JSON.
+Ten program umożliwia pobranie wszystkich wiadomości z konta Librus Synergia i zapisanie ich w formacie JSON.
 
 ## Funkcje
 - Eksportowanie ze wszystkich folderów, nawet z archiwum
